@@ -1,0 +1,98 @@
+<section class="container mt-5">
+  <h1 class="text-center mb-4">Recursos de {{ variantName }}</h1>
+  <div class="mb-3">
+    <span class="badge bg-secondary">Rol: {{ getUserRole() | titlecase }}</span>
+    <button class="btn btn-outline-primary btn-sm ms-2" (click)="openUploadOverlay()" *ngIf="getUserRole() === 'admin'">Subir recurso</button>
+    <button class="btn btn-outline-success btn-sm ms-2" (click)="openEvaluationOverlay(resources[0].idRecurso)" *ngIf="getUserRole() === 'admin' && resources.length && resources[0]?.idRecurso">Añadir Evaluación</button>
+  </div>
+  <div class="card mb-2" *ngFor="let r of resources">
+    <div class="card-body">
+      <h4 class="card-title h6">{{ r.titulo }} <small class="text-muted">({{ r.tipo }})</small></h4>
+      <p class="card-text" *ngIf="r.descripcion">{{ r.descripcion }}</p>
+      <div class="d-flex gap-2">
+        <a (click)="downloadResource(r.idRecurso)" class="btn btn-link">Descargar PDF</a>
+        <button class="btn btn-outline-danger btn-sm" (click)="deleteResource(r.idRecurso)" *ngIf="getUserRole() === 'admin'">Eliminar</button>
+        <button class="btn btn-link" (click)="toggleEvaluations(r.idRecurso)">Evaluaciones ({{ (evaluations[r.idRecurso] || []).length }})</button>
+      </div>
+      <div class="collapse mt-2" [ngClass]="{'show': showEvaluations[r.idRecurso]}">
+        <div class="card mb-2 bg-light border-info" *ngFor="let eval of evaluations[r.idRecurso]">
+          <div class="card-body">
+            <p class="mb-1"><strong>Evaluación:</strong> {{ eval.fecha_inicio | date:'short' }} - {{ eval.fecha_fin | date:'short' }}</p>
+            <p class="mb-0">{{ eval.instrucciones }}</p>
+          </div>
+        </div>
+        <div class="alert alert-info text-center" *ngIf="!(evaluations[r.idRecurso]?.length)">No hay evaluaciones para este recurso.</div>
+      </div>
+    </div>
+  </div>
+  <div class="alert alert-info text-center" *ngIf="!resources.length && !loadingResources">No hay recursos disponibles para esta variante.</div>
+  <div class="modal fade" [ngClass]="{'show d-block': showUploadOverlay}" tabindex="-1" *ngIf="showUploadOverlay">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Subir recurso</h5>
+          <button type="button" class="btn-close" (click)="closeUploadOverlay()" aria-label="Close"></button>
+        </div>
+        <form (ngSubmit)="uploadResource($event)" class="modal-body">
+          <div class="mb-3">
+            <input type="text" class="form-control" [(ngModel)]="uploadForm.titulo" name="titulo" placeholder="Título" required>
+          </div>
+          <div class="mb-3">
+            <textarea class="form-control" [(ngModel)]="uploadForm.descripcion" name="descripcion" placeholder="Descripción"></textarea>
+          </div>
+          <div class="mb-3">
+            <select class="form-select" [(ngModel)]="uploadForm.titulo" name="tipo">
+              <option value="material">Material</option>
+              <option value="actividad_aprendizaje">Actividad</option>
+              <option value="leccion">Lección</option>
+              <option value="evaluacion">Evaluación</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <input type="file" class="form-control" name="file" accept="application/pdf" (change)="onFileChange($event)" required>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" (click)="closeUploadOverlay()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Enviar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" [ngClass]="{'show d-block': showEvaluationOverlay}" tabindex="-1" *ngIf="showEvaluationOverlay">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Añadir Evaluación</h5>
+          <button type="button" class="btn-close" (click)="closeEvaluationOverlay()" aria-label="Close"></button>
+        </div>
+        <form (ngSubmit)="createEvaluation(evaluationForm.idRecurso)" class="modal-body">
+          <div class="mb-3">
+            <label for="idRecurso" class="form-label">Recurso</label>
+            <select class="form-select" [(ngModel)]="evaluationForm.idRecurso" name="idRecurso" required>
+              <option *ngFor="let r of resources" [value]="r.idRecurso">{{ r.titulo }}</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="fecha_inicio" class="form-label">Fecha de Inicio</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="evaluationForm.fecha_inicio" name="fecha_inicio" required>
+          </div>
+          <div class="mb-3">
+            <label for="fecha_fin" class="form-label">Fecha de Fin</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="evaluationForm.fecha_fin" name="fecha_fin" required>
+          </div>
+          <div class="mb-3">
+            <label for="instrucciones" class="form-label">Instrucciones</label>
+            <textarea class="form-control" [(ngModel)]="evaluationForm.instrucciones" name="instrucciones" placeholder="Instrucciones" required></textarea>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" (click)="closeEvaluationOverlay()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Crear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" *ngIf="showUploadOverlay || showEvaluationOverlay"></div>
+  <div class="alert alert-danger text-center mt-3" *ngIf="errorMessage">{{ errorMessage }}</div>
+</section>

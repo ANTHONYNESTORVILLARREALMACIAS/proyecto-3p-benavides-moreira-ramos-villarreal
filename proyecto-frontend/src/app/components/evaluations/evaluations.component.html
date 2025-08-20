@@ -1,0 +1,12 @@
+<section class="container mt-5">
+  <h1 class="text-center mb-4">Evaluaciones de {{ resourceTitle }}</h1>
+  <div class="card mb-2" *ngFor="let eval of evaluations">
+    <div class="card-body">
+      <p class="mb-1"><strong>Evaluación:</strong> {{ eval.fecha_inicio | date:'short' }} - {{ eval.fecha_fin | date:'short' }}</p>
+      <p class="mb-2">{{ eval.instrucciones }}</p>
+      <a class="btn btn-primary btn-sm" [routerLink]="['/evaluations', eval.idEvaluacion]">Realizar Evaluación</a>
+    </div>
+  </div>
+  <div class="alert alert-info text-center" *ngIf="!evaluations.length">No hay evaluaciones disponibles para este recurso.</div>
+  <div class="alert alert-danger text-center mt-3" *ngIf="errorMessage">{{ errorMessage }}</div>
+</section>

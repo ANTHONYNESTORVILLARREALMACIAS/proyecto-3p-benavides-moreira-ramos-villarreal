@@ -1,0 +1,24 @@
+section {
+  min-height: 80vh;
+}
+
+.card {
+  margin-bottom: 1rem;
+}
+
+.card-header {
+  background-color: #f8f9fa;
+}
+
+.btn-link {
+  padding: 0;
+  vertical-align: baseline;
+}
+
+.modal-backdrop {
+  opacity: 0.5;
+}
+
+.badge {
+  font-size: 0.8rem;
+}

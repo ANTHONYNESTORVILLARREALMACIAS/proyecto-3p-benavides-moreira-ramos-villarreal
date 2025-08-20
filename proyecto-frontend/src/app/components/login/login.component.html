@@ -1,0 +1,22 @@
+<section class="min-vh-100 d-flex align-items-center justify-content-center" style="background-color: #f8f9fa;">
+  <div class="card p-4 shadow-sm" style="max-width: 400px; width: 100%;">
+    <h1 class="text-center mb-4">Iniciar Sesión</h1>
+    <form (ngSubmit)="login()" class="needs-validation" novalidate>
+      <div class="mb-3">
+        <label for="username" class="form-label">Usuario</label>
+        <input type="text" class="form-control" id="username" [(ngModel)]="loginForm.username" name="username" required>
+        <div class="invalid-feedback">Por favor, ingrese un usuario.</div>
+      </div>
+      <div class="mb-3">
+        <label for="password" class="form-label">Contraseña</label>
+        <input type="password" class="form-control" id="password" [(ngModel)]="loginForm.password" name="password" required>
+        <div class="invalid-feedback">Por favor, ingrese una contraseña.</div>
+      </div>
+      <div class="d-flex justify-content-between align-items-center">
+        <button type="submit" class="btn btn-primary" [disabled]="!loginForm.username || !loginForm.password">Iniciar Sesión</button>
+        <a routerLink="/register" class="btn btn-link">Registrarse</a>
+      </div>
+      <div class="alert alert-danger mt-3" *ngIf="errorMessage">{{ errorMessage }}</div>
+    </form>
+  </div>
+</section>

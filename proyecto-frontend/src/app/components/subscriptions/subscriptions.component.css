@@ -1,0 +1,11 @@
+section {
+  min-height: 80vh;
+}
+
+.list-group-item {
+  margin-bottom: 1rem;
+}
+
+.badge {
+  font-size: 0.8rem;
+}

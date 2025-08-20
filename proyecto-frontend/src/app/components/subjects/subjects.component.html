@@ -1,0 +1,72 @@
+<section class="container mt-5">
+  <h1 class="text-center mb-4">Materias</h1>
+  <div class="card mb-3" *ngFor="let sub of subjects">
+    <div class="card-header">
+      <h3 class="h5 mb-0">{{ sub.nombre }}</h3>
+    </div>
+    <div class="card-body">
+      <div class="card mb-2" *ngFor="let variant of (sub.idAsignatura | asyncVariants | async)">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <div>
+            <strong>{{ variant.nombre }}</strong>
+            <span class="badge bg-secondary ms-2" *ngIf="getUserRole(variant.idVariante) as role">{{ role | titlecase }}</span>
+            <span class="badge bg-success ms-2" *ngIf="hasSubscription(variant.idVariante)">Ya estás suscrito</span>
+          </div>
+          <div>
+            <a class="btn btn-outline-primary btn-sm me-2" [routerLink]="['/resources', variant.idVariante]">Ver Recursos</a>
+            <button class="btn btn-outline-success btn-sm me-2" (click)="openSubscribeOverlay(variant.idVariante)" *ngIf="!hasSubscription(variant.idVariante)">Suscribirse</button>
+            <button class="btn btn-outline-warning btn-sm" (click)="openModifyRoleOverlay(variant.idVariante, getUserRole(variant.idVariante))" *ngIf="hasSubscription(variant.idVariante)">Modificar Rol</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" [ngClass]="{'show d-block': showSubscribeOverlay}" tabindex="-1" *ngIf="showSubscribeOverlay">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Suscribirse a variante</h5>
+          <button type="button" class="btn-close" (click)="closeSubscribeOverlay()" aria-label="Close"></button>
+        </div>
+        <form (ngSubmit)="subscribe(subscribeForm.idVariante)" class="modal-body">
+          <div class="mb-3">
+            <label for="rol" class="form-label">Rol</label>
+            <select class="form-select" [(ngModel)]="subscribeForm.rol" name="rol">
+              <option value="suscriptor">Suscriptor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" (click)="closeSubscribeOverlay()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Suscribirse</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal fade" [ngClass]="{'show d-block': showModifyRoleOverlay}" tabindex="-1" *ngIf="showModifyRoleOverlay">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Modificar Rol</h5>
+          <button type="button" class="btn-close" (click)="closeModifyRoleOverlay()" aria-label="Close"></button>
+        </div>
+        <form (ngSubmit)="modifyRole(subscribeForm.idVariante)" class="modal-body">
+          <div class="mb-3">
+            <label for="rol" class="form-label">Rol</label>
+            <select class="form-select" [(ngModel)]="subscribeForm.rol" name="rol">
+              <option value="suscriptor">Suscriptor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <div class="d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-secondary" (click)="closeModifyRoleOverlay()">Cancelar</button>
+            <button type="submit" class="btn btn-primary">Actualizar</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="modal-backdrop fade show" *ngIf="showSubscribeOverlay || showModifyRoleOverlay"></div>
+  <div class="alert alert-danger text-center mt-3" *ngIf="errorMessage">{{ errorMessage }}</div>
+</section>
