@@ -68,12 +68,17 @@ CREATE TABLE evaluations (
 USE school_db;
 
 -- Insertar 5 usuarios
+-- anthonisito antho123
+-- antho 1234
+-- ruben ruben123
+-- moreira moreira123
+-- javier javier123
 INSERT INTO users (username, password, email, born_date) VALUES
-('juanperez', 'pass123', 'juan.perez@example.com', '1995-03-15'),
-('mariagomez', 'secure456', 'maria.gomez@example.com', '1998-07-22'),
-('carloslopez', 'mypassword789', 'carlos.lopez@example.com', '1990-11-30'),
-('anarodriguez', 'ana2023', 'ana.rodriguez@example.com', '2000-01-10'),
-('luismartinez', 'luispass321', 'luis.martinez@example.com', '1993-05-25');
+('anthonisito', '$2b$10$IpB8jOyqhBJXgnpX/E1X6OlBUIYmx3e22GQz9ZkcvufEj.8MCduQi', 'anvillarreal@espe.edu.ec', '2001-09-11'),
+('antho', '$2b$10$3jP9AExNPN2eOICOKdxYGOG1Jl5BIU2MEl3RDCwHpxlGqhVgQphge', 'anthonyvml123@hotmail.es', '2001-09-11'),
+('ruben', '$2b$10$ZDFXQ68qtJznx5Jrw61bbuwwQrbonQAJLUVHLbIHzEZV5k7dwVzOi', 'ruben@gmail.com', '2001-01-01'),
+('moreira', '$2b$10$vEFKCgsl4wwaLIdcDSIkB.XyJZDwNY/Cs/pxReFpsn0LxxzyNOkgG', 'moreira@gmail.com', '2001-01-01'),
+('javier', '$2b$10$ATI.n9Y/fosjj3SXpVaycekYPb75Qjt9UsLN6ZN8eBciO5EKAapee', 'javier@gmail.com', '2001-01-01');
 
 -- Insertar 5 asignaturas
 INSERT INTO subjects (nombre) VALUES
