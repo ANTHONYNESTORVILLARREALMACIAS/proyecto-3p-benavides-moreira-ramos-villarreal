@@ -1,0 +1,124 @@
+-- BACKEND
+
+-- CREACION BASE DE DATOS EN MYSQL XAMPP
+
+CREATE DATABASE school_db;
+USE school_db;
+
+CREATE TABLE users (
+  idUsuario INT AUTO_INCREMENT PRIMARY KEY,
+  username VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL,
+  born_date DATE NOT NULL
+);
+
+CREATE TABLE subjects (
+  idAsignatura INT AUTO_INCREMENT PRIMARY KEY,
+  nombre VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE variants (
+  idVariante INT AUTO_INCREMENT PRIMARY KEY,
+  idAsignatura INT,
+  nombre VARCHAR(255) NOT NULL,
+  FOREIGN KEY (idAsignatura) REFERENCES subjects(idAsignatura)
+);
+
+CREATE TABLE resources (
+  idRecurso INT AUTO_INCREMENT PRIMARY KEY,
+  idVariante INT,
+  tipo VARCHAR(50) NOT NULL,
+  titulo VARCHAR(255) NOT NULL,
+  descripcion TEXT,
+  file_path VARCHAR(255) NOT NULL,
+  creado_por INT,
+  FOREIGN KEY (idVariante) REFERENCES variants(idVariante),
+  FOREIGN KEY (creado_por) REFERENCES users(idUsuario)
+);
+
+CREATE TABLE users_variants (
+  idUsuario INT,
+  idVariante INT,
+  rol ENUM('suscriptor', 'admin') NOT NULL,
+  PRIMARY KEY (idUsuario, idVariante),
+  FOREIGN KEY (idUsuario) REFERENCES users(idUsuario),
+  FOREIGN KEY (idVariante) REFERENCES variants(idVariante)
+);
+
+CREATE TABLE subscriptions (
+  idSuscripcion INT AUTO_INCREMENT PRIMARY KEY,
+  idUsuario INT,
+  idVariante INT,
+  state ENUM('activa', 'inactiva') DEFAULT 'activa',
+  FOREIGN KEY (idUsuario) REFERENCES users(idUsuario),
+  FOREIGN KEY (idVariante) REFERENCES variants(idVariante)
+);
+
+CREATE TABLE evaluations (
+  idEvaluacion INT AUTO_INCREMENT PRIMARY KEY,
+  idRecurso INT,
+  fecha_inicio DATETIME,
+  fecha_fin DATETIME,
+  instrucciones TEXT,
+  FOREIGN KEY (idRecurso) REFERENCES resources(idRecurso)
+);
+
+-- Usar la base de datos
+USE school_db;
+
+-- Insertar 5 usuarios
+INSERT INTO users (username, password, email, born_date) VALUES
+('juanperez', 'pass123', 'juan.perez@example.com', '1995-03-15'),
+('mariagomez', 'secure456', 'maria.gomez@example.com', '1998-07-22'),
+('carloslopez', 'mypassword789', 'carlos.lopez@example.com', '1990-11-30'),
+('anarodriguez', 'ana2023', 'ana.rodriguez@example.com', '2000-01-10'),
+('luismartinez', 'luispass321', 'luis.martinez@example.com', '1993-05-25');
+
+-- Insertar 5 asignaturas
+INSERT INTO subjects (nombre) VALUES
+('Matemáticas'),
+('Historia'),
+('Ciencias'),
+('Lenguaje'),
+('Inglés');
+
+-- Insertar 5 variantes (relacionadas con asignaturas)
+INSERT INTO variants (idAsignatura, nombre) VALUES
+(1, 'Álgebra'),
+(1, 'Geometría'),
+(2, 'Historia Universal'),
+(3, 'Biología'),
+(4, 'Literatura');
+
+-- Insertar 5 recursos (relacionados con variantes y creados por usuarios)
+INSERT INTO resources (idVariante, tipo, titulo, descripcion, file_path, creado_por) VALUES
+(1, 'PDF', 'Introducción al Álgebra', 'Guía básica de álgebra lineal', '/files/algebra.pdf', 1),
+(2, 'Video', 'Teorema de Pitágoras', 'Explicación del teorema con ejemplos', '/videos/pitagoras.mp4', 2),
+(3, 'Documento', 'Revolución Francesa', 'Resumen de la Revolución Francesa', '/files/revolucion_francesa.docx', 3),
+(4, 'Presentación', 'Células y su estructura', 'Presentación sobre biología celular', '/files/celulas.pptx', 4),
+(5, 'PDF', 'Análisis de Poemas', 'Análisis de poemas contemporáneos', '/files/poemas.pdf', 5);
+
+-- Insertar 5 relaciones usuario-variante
+INSERT INTO users_variants (idUsuario, idVariante, rol) VALUES
+(1, 1, 'suscriptor'),
+(2, 2, 'admin'),
+(3, 3, 'suscriptor'),
+(4, 4, 'admin'),
+(5, 5, 'suscriptor');
+
+-- Insertar 5 suscripciones
+INSERT INTO subscriptions (idUsuario, idVariante, state) VALUES
+(1, 1, 'activa'),
+(2, 2, 'activa'),
+(3, 3, 'inactiva'),
+(4, 4, 'activa'),
+(5, 5, 'inactiva');
+
+-- Insertar 5 evaluaciones (relacionadas con recursos)
+INSERT INTO evaluations (idRecurso, fecha_inicio, fecha_fin, instrucciones) VALUES
+(1, '2025-08-20 08:00:00', '2025-08-20 10:00:00', 'Resolver los ejercicios del PDF de álgebra.'),
+(2, '2025-08-21 09:00:00', '2025-08-21 11:00:00', 'Ver el video y responder las preguntas.'),
+(3, '2025-08-22 10:00:00', '2025-08-22 12:00:00', 'Leer el documento y escribir un resumen.'),
+(4, '2025-08-23 11:00:00', '2025-08-23 13:00:00', 'Revisar la presentación y contestar el cuestionario.'),
+(5, '2025-08-24 12:00:00', '2025-08-24 14:00:00', 'Analizar los poemas y redactar un ensayo.');
