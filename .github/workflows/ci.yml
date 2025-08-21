@@ -72,6 +72,16 @@ jobs:
             node test-basic.js
           fi
 
+      - name: Ejecutar pruebas de k6
+        run: |
+          if [ -f "package.json" ] && grep -q '"k6"' package.json; then
+            echo "🧪 Ejecutando pruebas de k6..."
+            npm run test:performance:win
+            echo "✅ Pruebas de k6 pasaron correctamente"
+          else
+            echo "✅ No hay pruebas de k6 configuradas"
+          fi
+
       - name: Crear reporte del backend
         run: |
           mkdir -p coverage
@@ -226,14 +236,4 @@ jobs:
             echo "🔍 Revisa los logs para ver los errores específicos"
             exit 1
           fi
-      - name: Upload performance reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-reports
-          path: ./proyecto-backend/reports/
-
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage
-          path: ./proyecto-backend/coverage/
+      

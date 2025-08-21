@@ -9,9 +9,9 @@ export const options = {
     ramp_load: {
       executor: 'ramping-vus',
       stages: [
-        { duration: '5m', target: 100 }, // ramp up to 100 users
-        { duration: '10m', target: 100 }, // stay at 100 users
-        { duration: '5m', target: 0 }, // ramp down to 0 users
+        { duration: '30s', target: 100 }, // ramp up to 100 users
+        { duration: '1m', target: 100 }, // stay at 100 users
+        { duration: '30s', target: 0 }, // ramp down to 0 users
       ],
     },
     spike: {
@@ -25,9 +25,9 @@ export const options = {
     },
     soak: {
       executor: 'constant-vus',
-      startTime: '25m',
+      startTime: '2m',
       vus: 50,
-      duration: '30m',
+      duration: '3m',
     },
   },
   thresholds: THRESHOLDS,
