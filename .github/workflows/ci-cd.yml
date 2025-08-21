@@ -1,82 +1,76 @@
-  name: CI & CD (front + back)
+name: CI & CD (front + back)
 
-
-  on:
+on:
   push:
-  branches: [ main, develop ]
-  paths:
-  - 'proyecto-frontend/**'
-  - 'proyecto-backend/**'
-  - 'k6/**'
-  - '.github/workflows/**'
+    branches: [ main, develop ]
+    paths:
+      - 'proyecto-frontend/**'
+      - 'proyecto-backend/**'
+      - 'k6/**'
+      - '.github/workflows/**'
 
-
-  concurrency:
+concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-
-  jobs:
+jobs:
   ci_front:
-  name: CI Front (Angular)
-  runs-on: ubuntu-latest
-  if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
-  defaults:
-  run:
-  working-directory: front
-  steps:
-  - uses: actions/checkout@v4
-  - uses: actions/setup-node@v4
-  with:
-  node-version: 20
-  cache: npm
-  cache-dependency-path: front/package-lock.json
-  - run: npm ci
-  - run: npm run lint --if-present
-  - run: npm test --if-present
-  - run: npm run build
-  - name: Guardar artefacto de build
-  uses: actions/upload-artifact@v4
-  with:
-  name: front-dist
-  path: front/dist
-
+    name: CI Front (Angular)
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
+    defaults:
+      run:
+        working-directory: front
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: front/package-lock.json
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present
+      - run: npm run build
+      - name: Guardar artefacto de build
+        uses: actions/upload-artifact@v4
+        with:
+          name: front-dist
+          path: front/dist
 
   ci_back:
-  name: CI Back (Node)
-  runs-on: ubuntu-latest
-  defaults:
-  run:
-  working-directory: back
-  steps:
-  - uses: actions/checkout@v4
-  - uses: actions/setup-node@v4
-  with:
-  node-version: 20
-  cache: npm
-  cache-dependency-path: back/package-lock.json
-  - run: npm ci
-  - run: npm run lint --if-present
-  - run: npm test --if-present
-  - run: npm run build --if-present
-
+    name: CI Back (Node)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: back
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: back/package-lock.json
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present
+      - run: npm run build --if-present
 
   k6:
-  name: k6 Smoke/Load
-  needs: [ci_back]
-  runs-on: ubuntu-latest
-  steps:
-  - uses: actions/checkout@v4
-  - uses: actions/setup-node@v4
-  with:
-  node-version: 20
-  - name: Instalar deps del back
-  working-directory: back
-  run: |
-  npm ci
-  - name: Levantar API en background
-  working-directory: back
-  run: |
-  npm run start:ci &
-  npx wait-on http://localhost:3000/health
-  echo "Prod URL: https://${{ vars.FIREBASE_SITE_PROD }}.web.app" >> $GITHUB_STEP_SUMMARY
+    name: k6 Smoke/Load
+    needs: [ci_back]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar deps del back
+        working-directory: back
+        run: npm ci
+      - name: Levantar API en background
+        working-directory: back
+        run: |
+          npm run start:ci &
+          npx wait-on http://localhost:3000/health
+          echo "Prod URL: https://${{ vars.FIREBASE_SITE_PROD }}.web.app" >> $GITHUB_STEP_SUMMARY
