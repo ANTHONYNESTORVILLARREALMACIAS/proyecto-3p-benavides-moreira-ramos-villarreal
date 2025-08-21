@@ -19,6 +19,7 @@ export class ResourcesComponent implements OnInit {
   idVariante: number;
   variantName: string = '';
   resources: Resource[] = [];
+  errorMessage: string = '';
   subscriptions: UserVariant[] = [];
   evaluations: { [key: number]: Evaluation[] } = {};
   showEvaluations: { [key: number]: boolean } = {};
@@ -26,7 +27,6 @@ export class ResourcesComponent implements OnInit {
   evaluationForm = { idRecurso: 0, fecha_inicio: '', fecha_fin: '', instrucciones: '' };
   showUploadOverlay = false;
   showEvaluationOverlay = false;
-  errorMessage = '';
   loadingResources = false;
 
   constructor(private apiService: ApiService, private route: ActivatedRoute) {
@@ -67,16 +67,17 @@ export class ResourcesComponent implements OnInit {
     }
   }
 
-  async downloadResource(idRecurso: number) {
+  async downloadResource(id: number) {
     try {
-      const blob = await this.apiService.downloadResource(idRecurso).toPromise();
+      const blob = await this.apiService.downloadResource(id).toPromise();
       if (blob) {
-        saveAs(blob, `resource_${idRecurso}.pdf`);
+        saveAs(blob, `resource_${id}.pdf`);
       } else {
-        throw new Error('No se pudo descargar el recurso');
+        throw new Error('No se recibió un archivo válido');
       }
-    } catch (err: any) {
-      this.errorMessage = `Error descargando recurso: ${err.message}`;
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+      this.errorMessage = `Error descargando recurso: ${errorMsg}`;
       setTimeout(() => (this.errorMessage = ''), 3500);
     }
   }

@@ -7,8 +7,8 @@ import { Variant } from '../../models/variant.model';
 import { Resource } from '../../models/resource.model';
 import { Evaluation } from '../../models/evaluation.model';
 import { UserVariant } from '../../models/user-variant.model';
-import { saveAs } from 'file-saver';
 import { Observable } from 'rxjs';
+import saveAs from 'file-saver';
 
 @Pipe({
   name: 'asyncVariants',
@@ -75,11 +75,17 @@ export class MainComponent implements OnInit {
   subscriptions: UserVariant[] = [];
   resources: Resource[] = [];
   evaluations: Evaluation[] = [];
-  uploadForm = { idVariante: 0, titulo: '', descripcion: '', tipo: 'material', file: null as File | null };
+  uploadForm: { idVariante: number; titulo: string; descripcion: string; tipo: string; file: File | null } = {
+    idVariante: 0,
+    titulo: '',
+    descripcion: '',
+    tipo: 'material',
+    file: null
+  };
   subscribeForm = { idVariante: 0, rol: 'suscriptor' as 'suscriptor' | 'admin' };
-  showUploadOverlay = false;
   showSubscribeOverlay = false;
-  errorMessage = '';
+  errorMessage: string = '';
+  showUploadOverlay: boolean = false;
   selectedVariantId: number | null = null;
   loadingResources = false;
 
@@ -157,35 +163,54 @@ export class MainComponent implements OnInit {
     }
   }
 
-  async loadResources(idVariante: number) {
+  async downloadResource(id: number) {
     try {
-      this.loadingResources = true;
-      this.selectedVariantId = idVariante;
-      const resources = await this.apiService.getResourcesByVariant(idVariante).toPromise();
-      this.resources = resources ?? [];
-      this.evaluations = [];
-      for (const resource of this.resources) {
-        const evals = await this.apiService.getEvaluationsByResource(resource.idRecurso).toPromise();
-        this.evaluations.push(...(evals ?? []));
+      const blob = await this.apiService.downloadResource(id).toPromise();
+      if (blob) {
+        saveAs(blob, `resource_${id}.pdf`);
+      } else {
+        throw new Error('No se recibió un archivo válido');
       }
-    } catch (err: any) {
-      this.errorMessage = `Error cargando recursos: ${err.message}`;
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+      this.errorMessage = `Error descargando recurso: ${errorMsg}`;
       setTimeout(() => (this.errorMessage = ''), 3500);
-    } finally {
-      this.loadingResources = false;
     }
   }
 
-  async downloadResource(idRecurso: number) {
+  async uploadResource(event: Event) {
+    event.preventDefault();
+    if (!this.uploadForm.file || this.uploadForm.file.type !== 'application/pdf') {
+      this.errorMessage = 'Por favor, selecciona un archivo PDF válido';
+      setTimeout(() => (this.errorMessage = ''), 3500);
+      return;
+    }
     try {
-      const blob = await this.apiService.downloadResource(idRecurso).toPromise();
-      if (blob) {
-        saveAs(blob, `resource_${idRecurso}.pdf`);
-      } else {
-        throw new Error('No se pudo descargar el recurso');
+      const formData = new FormData();
+      formData.append('titulo', this.uploadForm.titulo);
+      formData.append('descripcion', this.uploadForm.descripcion);
+      formData.append('tipo', this.uploadForm.tipo);
+      formData.append('file', this.uploadForm.file);
+      await this.apiService.createResource(this.uploadForm.idVariante, formData).toPromise();
+      this.showUploadOverlay = false;
+      window.alert('Recurso subido con éxito.');
+      if (this.selectedVariantId !== null) {
+        this.loadResources(this.selectedVariantId);
       }
-    } catch (err: any) {
-      this.errorMessage = `Error descargando recurso: ${err.message}`;
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+      this.errorMessage = `Error subiendo recurso: ${errorMsg}`;
+      setTimeout(() => (this.errorMessage = ''), 3500);
+    }
+  }
+
+  async loadResources(id: number) {
+    try {
+      const resources = await this.apiService.getResources(id).toPromise();
+      this.resources = resources || []; // Handle undefined case
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : 'Error desconocido';
+      this.errorMessage = `Error cargando recursos: ${errorMsg}`;
       setTimeout(() => (this.errorMessage = ''), 3500);
     }
   }
@@ -221,31 +246,6 @@ export class MainComponent implements OnInit {
   closeSubscribeOverlay() {
     this.showSubscribeOverlay = false;
     this.subscribeForm = { idVariante: 0, rol: 'suscriptor' };
-  }
-
-  async uploadResource(event: Event) {
-    event.preventDefault();
-    if (!this.uploadForm.file || this.uploadForm.file.type !== 'application/pdf') {
-      this.errorMessage = 'Por favor, selecciona un archivo PDF válido';
-      setTimeout(() => (this.errorMessage = ''), 3500);
-      return;
-    }
-    const formData = new FormData();
-    formData.append('titulo', this.uploadForm.titulo);
-    formData.append('descripcion', this.uploadForm.descripcion);
-    formData.append('tipo', this.uploadForm.tipo);
-    formData.append('file', this.uploadForm.file);
-    try {
-      await this.apiService.createResource(this.uploadForm.idVariante, formData).toPromise();
-      this.closeUploadOverlay();
-      if (this.selectedVariantId) {
-        await this.loadResources(this.selectedVariantId);
-      }
-      alert('Recurso subido con éxito.');
-    } catch (err: any) {
-      this.errorMessage = `Error subiendo recurso: ${err.message}`;
-      setTimeout(() => (this.errorMessage = ''), 3500);
-    }
   }
 
   onFileChange(event: Event) {

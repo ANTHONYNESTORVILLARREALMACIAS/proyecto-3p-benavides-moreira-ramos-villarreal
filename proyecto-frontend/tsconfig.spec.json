@@ -1,16 +1,19 @@
-/* To learn more about Typescript configuration file: https://www.typescriptlang.org/docs/handbook/tsconfig-json.html. */
-/* To learn more about Angular compiler options: https://angular.dev/reference/configs/angular-compiler-options. */
 {
   "extends": "./tsconfig.json",
   "compilerOptions": {
-    "outDir": "./out-tsc/spec",
-    "types": [
-      "jasmine"
-    ]
+    "outDir": "./dist/out-tsc/spec",
+    "types": ["jasmine"],
+    "esModuleInterop": true,
+    "module": "es2020"
   },
   "include": [
-    "src/**/*.ts"
+    "src/**/*.spec.ts",
+    "src/**/*.d.ts",
+    "src/**/*.ts" // Asegura que los archivos de código también estén incluidos para cobertura
+  ],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage"
   ]
 }
-
-

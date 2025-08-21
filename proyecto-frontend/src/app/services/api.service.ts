@@ -194,6 +194,16 @@ export class ApiService {
     );
   }
 
+  getResources(idVariante: number): Observable<Resource[]> {
+    const params = new HttpParams().set('idVariante', idVariante.toString());
+    return this.http.get<Resource[]>(this.buildUrl('api/resources/byVariant'), {
+      headers: this.getHeaders(),
+      params
+    }).pipe(
+      catchError(err => this.handleError(err))
+    );
+  }
+
   createResource(idVariante: number, formData: FormData): Observable<any> {
     const params = new HttpParams().set('idVariante', idVariante.toString());
     return this.http.post(this.buildUrl('api/resources'), formData, {
