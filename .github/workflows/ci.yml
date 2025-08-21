@@ -2,26 +2,26 @@ name: CI/CD Workflow
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout del repositorio
+      - name: "Checkout del repositorio"
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js (con caché npm)
+      - name: "Configurar Node.js (con caché npm)"
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          cache: npm
           cache-dependency-path: |
             **/package-lock.json
 
-      - name: Instalar dependencias (preferir npm ci)
+      - name: "Instalar dependencias (preferir npm ci)"
         run: |
           if [ -f package-lock.json ]; then
             npm ci
@@ -29,10 +29,10 @@ jobs:
             npm install
           fi
 
-      - name: Lint del código
+      - name: "Lint del código"
         run: npm run lint
 
-      - name: Ejecutar pruebas unitarias (con cobertura)
+      - name: "Ejecutar pruebas unitarias (con cobertura)"
         env:
           CI: true
         run: |
@@ -40,11 +40,12 @@ jobs:
           mkdir -p artifacts/logs
           npm test -- --coverage 2>&1 | tee artifacts/logs/test-output.txt
 
-      - name: Publicar artefactos: logs y cobertura
+      - name: "Publicar artefactos: logs y cobertura"
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: ci-artifacts-${{ github.run_number }}
+          if-no-files-found: warn
           path: |
             artifacts/logs/**
             coverage/**
@@ -52,4 +53,9 @@ jobs:
             reports/**/*
             test-results/**/*.xml
             junit.xml
-          if-no-files-found: warn
+
+      - name: "Resumen del job"
+        if: success() && hashFiles('coverage/lcov.info') != ''
+        run: |
+          echo "### Cobertura generada" >> "$GITHUB_STEP_SUMMARY"
+          echo "Artefacto: ci-artifacts-${{ github.run_number }}" >> "$GITHUB_STEP_SUMMARY"
