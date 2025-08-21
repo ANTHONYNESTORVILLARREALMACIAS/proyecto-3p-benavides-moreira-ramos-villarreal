@@ -42,39 +42,41 @@ jobs:
             npm ci --legacy-peer-deps || npm install --legacy-peer-deps
             echo "✅ Dependencias del backend instaladas"
           else
-            echo "⚠️ No se encontró package.json en backend"
+            echo "❌ No se encontró package.json en backend"
+            exit 1
           fi
 
-      - name: Lint del backend (flat config)
+      - name: Lint del backend
         run: |
           if [ -f "eslint.config.js" ]; then
             echo "🔍 Ejecutando lint del backend (flat config)..."
-            npx eslint . || echo "⚠️ Lint encontró errores, pero continuando..."
+            npx eslint .
+            echo "✅ Lint pasó correctamente"
           elif [ -f "package.json" ] && grep -q '"lint"' package.json; then
             echo "🔍 Ejecutando lint del backend (npm script)..."
-            npm run lint || echo "⚠️ Lint encontró errores, pero continuando..."
+            npm run lint
+            echo "✅ Lint pasó correctamente"
           else
-            echo "ℹ️ No hay configuración de lint en backend"
+            echo "ℹ️ No hay configuración de lint en backend, omitiendo..."
           fi
-        continue-on-error: true
 
       - name: Ejecutar pruebas del backend
         run: |
           if [ -f "package.json" ] && grep -q '"test"' package.json; then
             echo "🧪 Ejecutando tests del backend..."
-            npm test || echo "⚠️ Tests fallaron, continuando..."
+            npm test
+            echo "✅ Tests pasaron correctamente"
           else
-            echo "✅ Creando prueba básica del backend..."
+            echo "✅ No hay tests configurados, creando prueba básica..."
             echo "console.log('✅ Backend CI passed successfully');" > test-basic.js
             node test-basic.js
           fi
-        continue-on-error: true
 
       - name: Crear reporte del backend
         run: |
           mkdir -p coverage
           echo "Backend CI Report - $(date)" > coverage/backend-report.txt
-          echo "Status: COMPLETED" >> coverage/backend-report.txt
+          echo "Status: SUCCESS" >> coverage/backend-report.txt
 
       - name: Subir artefactos del backend
         uses: actions/upload-artifact@v4
@@ -115,69 +117,55 @@ jobs:
 
       - name: Instalar Angular CLI
         run: |
-          npm install -g @angular/cli || echo "⚠️ Error instalando Angular CLI"
-          echo "✅ Angular CLI procesado"
-        continue-on-error: true
+          npm install -g @angular/cli
+          echo "✅ Angular CLI instalado"
 
-      - name: Lint del frontend (flat config)
+      - name: Lint del frontend
         run: |
-          echo "🔍 Ejecutando lint del frontend con configuración flat..."
+          echo "🔍 Ejecutando lint del frontend..."
           if [ -f "eslint.config.js" ]; then
             echo "📊 Usando eslint.config.js (configuración flat)..."
-            npx eslint . --ext .js,.ts,.html > lint-output.txt 2>&1 || true
-            
-            # Mostrar resumen
-            echo "📋 Resumen de lint:"
-            if [ -f "lint-output.txt" ]; then
-              echo "$(cat lint-output.txt | wc -l) líneas en el reporte de lint"
-              tail -10 lint-output.txt || echo "No hay output de lint"
-            fi
-            
-            echo "✅ Lint ejecutado con configuración flat"
+            # En configuración flat NO usar --ext, los archivos se definen en el config
+            npx eslint .
+            echo "✅ Lint pasó correctamente"
           elif [ -f "package.json" ] && grep -q '"lint"' package.json; then
             echo "🔍 Usando script npm lint..."
-            npm run lint > lint-output.txt 2>&1 || true
-            echo "✅ Lint ejecutado vía npm"
+            npm run lint
+            echo "✅ Lint pasó correctamente"
           else
-            echo "ℹ️ No se encontró configuración de lint"
+            echo "ℹ️ No se encontró configuración de lint, omitiendo..."
           fi
-        continue-on-error: true
 
       - name: Ejecutar pruebas del frontend
         run: |
           if [ -f "angular.json" ] && command -v ng &> /dev/null; then
             echo "🧪 Ejecutando tests de Angular..."
-            ng test --watch=false --browsers=ChromeHeadless --code-coverage || echo "⚠️ Tests fallaron, continuando..."
+            ng test --watch=false --browsers=ChromeHeadless --code-coverage
+            echo "✅ Tests pasaron correctamente"
           else
-            echo "✅ Creando prueba básica del frontend..."
+            echo "✅ No hay tests de Angular configurados, creando prueba básica..."
             echo "console.log('✅ Frontend CI passed successfully');" > test-basic.js
             node test-basic.js
           fi
-        continue-on-error: true
 
       - name: Build del frontend
         run: |
           if [ -f "angular.json" ] && command -v ng &> /dev/null; then
             echo "🏗️ Construyendo aplicación..."
-            ng build || echo "⚠️ Build falló, continuando..."
+            ng build
+            echo "✅ Build completado exitosamente"
           else
-            echo "✅ Simulando build..."
+            echo "✅ No es proyecto Angular, simulando build..."
             mkdir -p dist
             echo "<h1>Frontend Build - $(date)</h1>" > dist/index.html
           fi
-        continue-on-error: true
 
       - name: Crear reporte del frontend
         run: |
-          mkdir -p coverage dist reports
+          mkdir -p coverage dist
           echo "Frontend CI Report - $(date)" > coverage/frontend-report.txt
-          echo "Status: COMPLETED" >> coverage/frontend-report.txt
+          echo "Status: SUCCESS" >> coverage/frontend-report.txt
           echo "Lint Config: $([ -f 'eslint.config.js' ] && echo 'Flat Config' || echo 'Legacy/None')" >> coverage/frontend-report.txt
-          
-          # Copiar reportes de lint si existen
-          if [ -f "lint-output.txt" ]; then
-            cp lint-output.txt reports/
-          fi
 
       - name: Subir artefactos del frontend
         uses: actions/upload-artifact@v4
@@ -186,7 +174,6 @@ jobs:
           path: |
             ./proyecto-frontend/dist/
             ./proyecto-frontend/coverage/
-            ./proyecto-frontend/reports/
           retention-days: 7
         if: always()
 
@@ -199,17 +186,21 @@ jobs:
     steps:
       - name: Resumen del pipeline
         run: |
-          echo "🎉 CI Pipeline Completado con Configuración Flat ESLint!"
+          echo "🎉 CI Pipeline Results:"
           echo "✅ Backend CI: ${{ needs.backend-ci.result }}"
           echo "✅ Frontend CI: ${{ needs.frontend-ci.result }}"
           echo ""
-          echo "📋 Configuración ESLint:"
-          echo "- Backend: Configuración flat (eslint.config.js)"
-          echo "- Frontend: Configuración flat (eslint.config.js)"
-          echo "- Reglas consistentes entre proyectos"
-          echo ""
+          
           if [ "${{ needs.backend-ci.result }}" = "success" ] && [ "${{ needs.frontend-ci.result }}" = "success" ]; then
-            echo "🌟 ¡Pipeline exitoso con configuración moderna!"
+            echo "🌟 ¡Todos los checks pasaron exitosamente!"
+            echo "✅ Lint: Sin errores"
+            echo "✅ Tests: Todos pasaron" 
+            echo "✅ Build: Exitoso"
           else
-            echo "⚠️ Pipeline completado con observaciones menores"
+            echo "❌ Algunos checks fallaron:"
+            [ "${{ needs.backend-ci.result }}" != "success" ] && echo "❌ Backend CI falló"
+            [ "${{ needs.frontend-ci.result }}" != "success" ] && echo "❌ Frontend CI falló"
+            echo ""
+            echo "🔍 Revisa los logs para ver los errores específicos"
+            exit 1
           fi
