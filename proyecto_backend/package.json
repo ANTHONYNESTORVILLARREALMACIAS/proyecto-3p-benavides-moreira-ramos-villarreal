@@ -8,7 +8,17 @@
     "start:ci": "node server.js",
     "build": "echo 'no build step'",
     "lint": "eslint . || echo 'no lint'",
-    "test": "npm run lint && echo 'Tests OK'"
+    "test": "npm run lint && echo 'Tests OK'",
+    "lint:fix": "eslint . --fix",
+    "test:performance": "node scripts/run-performance-tests.js",
+    "test:performance:win": "scripts\\performance.bat",
+    "test:performance:auth": "k6 run tests/k6/auth.test.js --out json=reports/auth-results.json",
+    "test:performance:subjects": "k6 run tests/k6/subjects.test.js --out json=reports/subjects-results.json",
+    "test:performance:variants": "k6 run tests/k6/variants.test.js --out json=reports/variants-results.json",
+    "test:performance:resources": "k6 run tests/k6/resources.test.js --out json=reports/resources-results.json",
+    "test:performance:subscriptions": "k6 run tests/k6/subscriptions.test.js --out json=reports/subscriptions-results.json",
+    "test:performance:evaluations": "k6 run tests/k6/evaluations.test.js --out json=reports/evaluations-results.json",
+    "test:performance:uservariants": "k6 run tests/k6/userVariants.test.js --out json=reports/userVariants-results.json"
   },
   "keywords": [],
   "author": "",
@@ -25,7 +35,30 @@
     "mysql2": "^3.14.3"
   },
   "devDependencies": {
-    "eslint": "^9.33.0",
-    "jest": "^30.0.5"
+    "@types/jest": "^30.0.0",
+    "eslint": "^8.57.1",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-import": "^2.32.0",
+    "jest": "^30.0.5",
+    "supertest": "^7.1.4"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "controllers/**/*.js",
+      "services/**/*.js",
+      "middleware/**/*.js",
+      "!**/node_modules/**",
+      "!**/tests/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 90,
+        "functions": 90,
+        "lines": 90,
+        "statements": 90
+      }
+    },
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/unit/**/*.test.js"]
   }
 }
