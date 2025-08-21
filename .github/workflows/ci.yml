@@ -142,7 +142,7 @@ jobs:
         run: |
           if [ -f "angular.json" ]; then
             echo "🔍 Ejecutando lint de Angular..."
-            ng lint --force || echo "⚠️ Lint falló, continuando..."
+            ng lint || echo "⚠️ Lint falló, continuando..."
           elif [ -f "package.json" ] && grep -q '"lint"' package.json; then
             echo "🔍 Ejecutando lint personalizado..."
             npm run lint || echo "⚠️ Lint falló, continuando..."
