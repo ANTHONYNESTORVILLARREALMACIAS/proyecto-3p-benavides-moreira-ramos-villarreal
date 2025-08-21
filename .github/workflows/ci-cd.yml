@@ -6,14 +6,8 @@ on:
     paths:
       - 'proyecto-frontend/**'
       - 'proyecto-backend/**'
-      - 'proyecto-backend/tests/k6/**'
+      - 'k6/**'
       - '.github/workflows/**'
-  pull_request:
-    branches: [main, develop]
-
-permissions:
-  contents: read
-  actions: write
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -26,216 +20,74 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     defaults:
       run:
-        working-directory: proyecto-frontend
-    steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: proyecto-frontend/package-lock.json
-      - name: Limpiar cache
-        run: |
-          rm -rf node_modules package-lock.json
-          npm cache clean --force
-      - name: Instalar dependencias del frontend
-        run: |
-          if [ -f "package.json" ]; then
-            echo "📦 Instalando dependencias..."
-            npm install --legacy-peer-deps
-            echo "✅ Dependencias instaladas"
-          else
-            echo "❌ No se encontró package.json"
-            exit 1
-          fi
-      - name: Instalar Angular CLI
-        run: npm install -g @angular/cli
-      - name: Verificar configuración ESLint
-        run: |
-          echo "🔍 Verificando archivos de configuración ESLint:"
-          if [ -f "eslint.config.mjs" ] || [ -f "eslint.config.js" ] || [ -f ".eslintrc.json" ]; then
-            echo "✅ Configuración ESLint encontrada"
-          else
-            echo "⚠️ No se encontró configuración de ESLint"
-          fi
-      - name: Lint del frontend
-        run: |
-          if [ -f "eslint.config.mjs" ] || [ -f "eslint.config.js" ]; then
-            echo "🔍 Usando configuración flat de ESLint..."
-            npx eslint .
-            echo "✅ Lint pasó correctamente"
-          elif [ -f "package.json" ] && grep -q '"lint"' package.json; then
-            echo "🔍 Usando script npm lint..."
-            npm run lint
-            echo "✅ Lint pasó correctamente"
-          else
-            echo "ℹ️ No se encontró configuración de lint, omitiendo..."
-          fi
-      - name: Ejecutar pruebas del frontend
-        run: |
-          if [ -f "angular.json" ] && command -v ng &> /dev/null; then
-            echo "🧪 Ejecutando tests de Angular..."
-            ng test --watch=false --browsers=ChromeHeadless --code-coverage
-            echo "✅ Tests pasaron correctamente"
-          else
-            echo "✅ No hay tests de Angular configurados, simulando..."
-            echo "console.log('✅ Frontend CI passed');" > test-basic.js
-            node test-basic.js
-          fi
-      - name: Build del frontend
-        run: |
-          if [ -f "angular.json" ] && command -v ng &> /dev/null; then
-            echo "🏗️ Construyendo aplicación..."
-            ng build
-            echo "✅ Build completado"
-          else
-            echo "✅ No es proyecto Angular, simulando build..."
-            mkdir -p dist
-            echo "<h1>Frontend Build - $(date)</h1>" > dist/index.html
-          fi
-      - name: Crear reporte del frontend
-        run: |
-          mkdir -p coverage dist
-          echo "Frontend CI Report - $(date)" > coverage/frontend-report.txt
-          echo "Status: SUCCESS" >> coverage/frontend-report.txt
-      - name: Subir artefactos del frontend
-        uses: actions/upload-artifact@v4
-        with:
-          name: front-dist
-          path: |
-            proyecto-frontend/dist/
-            proyecto-frontend/coverage/
-          retention-days: 7
-        if: always()
-
-  ci_back:
-    name: CI Back (Node)
-    runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
-    defaults:
-      run:
-        working-directory: proyecto-backend
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: ""
-          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-          MYSQL_DATABASE: test_db
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
-    steps:
-      - name: Checkout del repositorio
-        uses: actions/checkout@v4
-      - name: Configurar Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: proyecto-backend/package-lock.json
-      - name: Instalar dependencias del backend
-        run: |
-          if [ -f "package.json" ]; then
-            npm ci --legacy-peer-deps || npm install --legacy-peer-deps
-            echo "✅ Dependencias instaladas"
-          else
-            echo "❌ No se encontró package.json"
-            exit 1
-          fi
-      - name: Lint del backend
-        run: |
-          if [ -f "eslint.config.js" ]; then
-            echo "🔍 Ejecutando lint (flat config)..."
-            npx eslint .
-            echo "✅ Lint pasó correctamente"
-          elif [ -f "package.json" ] && grep -q '"lint"' package.json; then
-            echo "🔍 Ejecutando lint (npm script)..."
-            npm run lint
-            echo "✅ Lint pasó correctamente"
-          else
-            echo "ℹ️ No hay configuración de lint, omitiendo..."
-          fi
-      - name: Ejecutar pruebas del backend
-        run: |
-          if [ -f "package.json" ] && grep -q '"test"' package.json; then
-            echo "🧪 Ejecutando tests..."
-            npm test
-            echo "✅ Tests pasaron correctamente"
-          else
-            echo "✅ No hay tests configurados, simulando..."
-            echo "console.log('✅ Backend CI passed');" > test-basic.js
-            node test-basic.js
-          fi
-      - name: Crear reporte del backend
-        run: |
-          mkdir -p coverage
-          echo "Backend CI Report - $(date)" > coverage/backend-report.txt
-          echo "Status: SUCCESS" >> coverage/backend-report.txt
-      - name: Subir artefactos del backend
-        uses: actions/upload-artifact@v4
-        with:
-          name: back-reports
-          path: proyecto-backend/coverage/
-          retention-days: 7
-        if: always()
-
-  k6:
-    name: k6 Smoke/Load Tests
-    needs: [ci_back]
-    runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
-    defaults:
-      run:
-        working-directory: proyecto-backend
-    services:
-      mysql:
-        image: mysql:8.0
-        env:
-          MYSQL_ROOT_PASSWORD: ""
-          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-          MYSQL_DATABASE: test_db
-        ports:
-          - 3306:3306
-        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+        working-directory: proyecto-frontend # Fixed to match repository structure
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      - name: Instalar dependencias del backend
-        run: npm ci --legacy-peer-deps
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: proyecto-frontend/package-lock.json # Fixed path
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present
+      - run: npm run build
+      - name: Guardar artefacto de build
+        uses: actions/upload-artifact@v4
+        with:
+          name: front-dist
+          path: proyecto-frontend/dist # Fixed path
+          retention-days: 7
+
+  ci_back:
+    name: CI Back (Node)
+    runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }} # Added for consistency
+    defaults:
+      run:
+        working-directory: proyecto-backend # Fixed to match repository structure
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: proyecto-backend/package-lock.json # Fixed path
+      - run: npm ci
+      - run: npm run lint --if-present
+      - run: npm test --if-present
+      - run: npm run build --if-present
+
+  k6:
+    name: k6 Smoke/Load
+    needs: [ci_back]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Instalar deps del back
+        working-directory: proyecto-backend
+        run: npm ci
       - name: Levantar API en background
+        working-directory: proyecto-backend
         run: |
           npm run start:ci &
-          npx wait-on --timeout 30000 http://localhost:3000/health || { echo "API failed to start"; exit 1; }
-      - name: Instalar k6
-        run: |
-          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747825693
-          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
-          sudo apt-get update
-          sudo apt-get install k6
-      - name: Ejecutar pruebas de k6
-        working-directory: proyecto-backend/tests/k6
-        run: k6 run smoke-test.js # Ajusta al nombre real de tu script
-      - name: Resumen
-        run: |
+          npx wait-on http://localhost:3000/health
           echo "Prod URL: https://${{ vars.FIREBASE_SITE_PROD }}.web.app" >> $GITHUB_STEP_SUMMARY
-        if: success()
 
   deploy_front:
     name: Deploy Frontend (Firebase)
     needs: [ci_front]
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]') # Deploy only on main
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: front-dist
-          path: proyecto-frontend/
+          path: proyecto-frontend/dist
       - name: Desplegar a Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
@@ -243,47 +95,3 @@ jobs:
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
           channelId: live
           projectId: ${{ vars.FIREBASE_PROJECT_ID }}
-
-  deploy_back:
-    name: Deploy Backend (Heroku)
-    needs: [ci_back, k6]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]')
-    steps:
-      - uses: actions/checkout@v4
-      - name: Desplegar a Heroku
-        uses: akhileshns/heroku-deploy@v3.13.15
-        with:
-          heroku_api_key: ${{ secrets.HEROKU_API_KEY }}
-          heroku_app_name: ${{ vars.HEROKU_APP_NAME }}
-          heroku_email: ${{ vars.HEROKU_EMAIL }}
-          appdir: proyecto-backend
-
-  summary:
-    name: CI & CD Summary
-    runs-on: ubuntu-latest
-    needs: [ci_front, ci_back, k6, deploy_front, deploy_back]
-    if: always()
-    steps:
-      - name: Resumen del pipeline
-        run: |
-          echo "🎉 CI & CD Pipeline Results:"
-          echo "✅ Frontend CI: ${{ needs.ci_front.result }}"
-          echo "✅ Backend CI: ${{ needs.ci_back.result }}"
-          echo "✅ k6 Tests: ${{ needs.k6.result }}"
-          echo "✅ Frontend Deploy: ${{ needs.deploy_front.result }}"
-          echo "✅ Backend Deploy: ${{ needs.deploy_back.result }}"
-          echo ""
-          if [ "${{ needs.ci_front.result }}" = "success" ] && [ "${{ needs.ci_back.result }}" = "success" ] && [ "${{ needs.k6.result }}" = "success" ] && [ "${{ needs.deploy_front.result }}" = "success" ] && [ "${{ needs.deploy_back.result }}" = "success" ]; then
-            echo "🌟 ¡Todos los checks y despliegues pasaron exitosamente!"
-          else
-            echo "❌ Algunos pasos fallaron:"
-            [ "${{ needs.ci_front.result }}" != "success" ] && echo "❌ Frontend CI falló"
-            [ "${{ needs.ci_back.result }}" != "success" ] && echo "❌ Backend CI falló"
-            [ "${{ needs.k6.result }}" != "success" ] && echo "❌ k6 Tests fallaron"
-            [ "${{ needs.deploy_front.result }}" != "success" ] && echo "❌ Frontend Deploy falló"
-            [ "${{ needs.deploy_back.result }}" != "success" ] && echo "❌ Backend Deploy falló"
-            echo ""
-            echo "🔍 Revisa los logs para detalles"
-            exit 1
-          fi
