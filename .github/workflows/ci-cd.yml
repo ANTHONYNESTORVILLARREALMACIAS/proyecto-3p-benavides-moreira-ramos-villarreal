@@ -6,8 +6,8 @@ on:
     paths:
       - 'proyecto-frontend/**'
       - 'proyecto-backend/**'
-      - 'k6/**'
-      - '.github/workflows/**'
+      - '../../proyecto_backend/tests/k6/**/*'
+      - '../workflows/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
