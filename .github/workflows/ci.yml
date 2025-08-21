@@ -104,28 +104,50 @@ jobs:
           cache: 'npm'
           cache-dependency-path: './proyecto-frontend/package-lock.json'
 
+      - name: Limpiar cache
+        run: |
+          rm -rf node_modules package-lock.json
+          npm cache clean --force
+
       - name: Instalar dependencias del frontend
         run: |
           if [ -f "package.json" ]; then
             echo "📦 Instalando dependencias..."
-            npm install --legacy-peer-deps --force --no-audit --no-fund
+            npm install --legacy-peer-deps
             echo "✅ Dependencias del frontend instaladas"
           else
             echo "❌ No se encontró package.json en frontend"
             exit 1
           fi
 
+      - name: Verificar instalación
+        run: |
+          echo "📋 Verificando plugins de ESLint instalados:"
+          npm list @typescript-eslint/eslint-plugin @typescript-eslint/parser || echo "⚠️ Plugins de TypeScript no encontrados"
+
       - name: Instalar Angular CLI
         run: |
           npm install -g @angular/cli
           echo "✅ Angular CLI instalado"
 
+      - name: Verificar configuración ESLint
+        run: |
+          echo "🔍 Verificando archivos de configuración ESLint:"
+          if [ -f "eslint.config.mjs" ]; then
+            echo "✅ Encontrado: eslint.config.mjs (ES Module específico)"
+          elif [ -f "eslint.config.js" ]; then
+            echo "✅ Encontrado: eslint.config.js (flat config)"
+          elif [ -f ".eslintrc.json" ]; then
+            echo "✅ Encontrado: .eslintrc.json (legacy config)"
+          else
+            echo "⚠️ No se encontró configuración de ESLint"
+          fi
+
       - name: Lint del frontend
         run: |
           echo "🔍 Ejecutando lint del frontend..."
-          if [ -f "eslint.config.js" ]; then
-            echo "📊 Usando eslint.config.js (configuración flat)..."
-            # En configuración flat NO usar --ext, los archivos se definen en el config
+          if [ -f "eslint.config.mjs" ] || [ -f "eslint.config.js" ]; then
+            echo "📊 Usando configuración flat de ESLint..."
             npx eslint .
             echo "✅ Lint pasó correctamente"
           elif [ -f "package.json" ] && grep -q '"lint"' package.json; then
@@ -165,7 +187,7 @@ jobs:
           mkdir -p coverage dist
           echo "Frontend CI Report - $(date)" > coverage/frontend-report.txt
           echo "Status: SUCCESS" >> coverage/frontend-report.txt
-          echo "Lint Config: $([ -f 'eslint.config.js' ] && echo 'Flat Config' || echo 'Legacy/None')" >> coverage/frontend-report.txt
+          echo "Lint Config: $([ -f 'eslint.config.mjs' ] && echo 'Flat Config (.mjs)' || echo 'Other')" >> coverage/frontend-report.txt
 
       - name: Subir artefactos del frontend
         uses: actions/upload-artifact@v4
