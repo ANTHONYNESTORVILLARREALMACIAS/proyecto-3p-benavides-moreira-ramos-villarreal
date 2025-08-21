@@ -1,8 +1,8 @@
-name: CI & CD (Frontend + Backend)
+name: CI & CD (front + back)
 
 on:
   push:
-    branches: [main, develop]
+    branches: [ main, develop ]
     paths:
       - 'proyecto-frontend/**'
       - 'proyecto-backend/**'
@@ -20,14 +20,20 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     defaults:
       run:
-        working-directory: proyecto-frontend # Fixed to match repository structure
+        working-directory: ./proyecto-frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: proyecto-frontend/package-lock.json # Fixed path
+          cache-dependency-path: './proyecto-frontend/package-lock.json'
+
+      - name: Limpiar cache
+        run: |
+          rm -rf node_modules package-lock.json
+          npm cache clean --force
+
       - run: npm ci
       - run: npm run lint --if-present
       - run: npm test --if-present
@@ -36,23 +42,21 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: front-dist
-          path: proyecto-frontend/dist # Fixed path
-          retention-days: 7
+          path: front/dist
 
   ci_back:
     name: CI Back (Node)
     runs-on: ubuntu-latest
-    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }} # Added for consistency
     defaults:
       run:
-        working-directory: proyecto-backend # Fixed to match repository structure
+        working-directory: ./proyecto_backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: 'npm'
-          cache-dependency-path: proyecto-backend/package-lock.json # Fixed path
+          cache-dependency-path: './proyecto_backend/package-lock.json'
       - run: npm ci
       - run: npm run lint --if-present
       - run: npm test --if-present
@@ -68,30 +72,11 @@ jobs:
         with:
           node-version: 20
       - name: Instalar deps del back
-        working-directory: proyecto-backend
+        working-directory: back
         run: npm ci
       - name: Levantar API en background
-        working-directory: proyecto-backend
+        working-directory: back
         run: |
           npm run start:ci &
           npx wait-on http://localhost:3000/health
           echo "Prod URL: https://${{ vars.FIREBASE_SITE_PROD }}.web.app" >> $GITHUB_STEP_SUMMARY
-
-  deploy_front:
-    name: Deploy Frontend (Firebase)
-    needs: [ci_front]
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]') # Deploy only on main
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
-        with:
-          name: front-dist
-          path: proyecto-frontend/dist
-      - name: Desplegar a Firebase
-        uses: FirebaseExtended/action-hosting-deploy@v0
-        with:
-          repoToken: ${{ secrets.GITHUB_TOKEN }}
-          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
-          channelId: live
-          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
