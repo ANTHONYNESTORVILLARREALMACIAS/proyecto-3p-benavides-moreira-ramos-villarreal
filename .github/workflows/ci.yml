@@ -45,10 +45,3 @@ jobs:
             reports/**/*
             test-results/**/*.xml
             junit.xml
-
-      # (Opcional) Resumen rápido en el Job Summary si se detecta cobertura
-      - name: Añadir nota al resumen del job
-        if: hashFiles('coverage/lcov.info') != ''
-        run: |
-          echo "### Cobertura generada" >> $GITHUB_STEP_SUMMARY
-          echo "Se subió como artefacto \`ci-artifacts-${{ github.run_number }}\`." >> $GITHUB_STEP_SUMMARY
