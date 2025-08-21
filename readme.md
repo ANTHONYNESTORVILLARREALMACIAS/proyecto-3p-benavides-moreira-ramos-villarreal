@@ -18,3 +18,5 @@ Los predeterminados son:
 - XAMPP
 
 6.- Entrar en proyecto-frontend y poner "ng serve" para ejecutar.
+
+

@@ -1,0 +1,13 @@
+{
+"projects": {
+"default": "${miappproyectofinal-e2495}"
+},
+"targets": {
+"${miappproyectofinal-e2495}": {
+"hosting": {
+"staging": ["${miapp-stg1}"],
+"prod": ["${miapp-prod1}"]
+}
+}
+}
+}

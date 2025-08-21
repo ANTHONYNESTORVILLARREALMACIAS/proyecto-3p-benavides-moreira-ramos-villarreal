@@ -15,6 +15,11 @@ app.use(cors({
   origin: 'http://localhost:4200'
 }));
 
+app.get("/health", (req, res) => {
+  res.json({ status: "ok" });
+});
+
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
