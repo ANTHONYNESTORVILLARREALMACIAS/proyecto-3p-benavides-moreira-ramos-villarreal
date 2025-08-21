@@ -1,13 +1,28 @@
 {
-"projects": {
-"default": "${miappproyectofinal-e2495}"
-},
-"targets": {
-"${miappproyectofinal-e2495}": {
-"hosting": {
-"staging": ["${miapp-stg1}"],
-"prod": ["${miapp-prod1}"]
-}
-}
-}
+  "projects": {
+    "default": "${miappproyectofinal-e2495}"
+  },
+  "targets": {
+    "${miappproyectofinal-e2495}": {
+      "hosting": {
+        "staging": [
+          "${miapp-stg1}"
+        ],
+        "prod": [
+          "${miapp-prod1}"
+        ]
+      }
+    },
+    "miappproyectofinal-e2495": {
+      "hosting": {
+        "prod": [
+          "miappproyectofinal-e2495"
+        ],
+        "staging": [
+          "miapp-stg1"
+        ]
+      }
+    }
+  },
+  "etags": {}
 }
