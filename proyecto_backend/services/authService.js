@@ -7,20 +7,47 @@ class AuthService {
   }
 
   async login(username, password) {
-    const user = await this.userRepository.findByUsername(username);
-    if (!user) return { ok: false, msg: 'invalid-credentials' };
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) return { ok: false, msg: 'invalid-credentials' };
-    return { ok: true, user: { idUsuario: user.idUsuario, username: user.username } };
+    try {
+      // Usar getBy en lugar de findByUsername
+      const users = await this.userRepository.getBy(['username'], [username]);
+      if (!users.length) {return { ok: false, msg: 'invalid-credentials' };}
+
+      const user = users[0];
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {return { ok: false, msg: 'invalid-credentials' };}
+
+      return { ok: true, user: { idUsuario: user.idUsuario, username: user.username } };
+    } catch (error) {
+      console.error(`AuthService login error: ${error.message}`);
+      return { ok: false, msg: 'login-failed' };
+    }
   }
 
-  async register(user) {
+  async register(userData) {
     try {
-      const existingUser = await this.userRepository.findByUsername(user.username);
-      if (existingUser) return { ok: false, msg: 'username-taken' };
-      const newUser = await this.userRepository.create(user);
-      return { ok: true, user: newUser };
+      // Verificar si el usuario ya existe
+      const existingUsers = await this.userRepository.getBy(['username'], [userData.username]);
+      if (existingUsers.length) {return { ok: false, msg: 'username-taken' };}
+
+      const hashedPassword = await bcrypt.hash(userData.password, 10);
+      const newUser = {
+        username: userData.username,
+        password: hashedPassword,
+        email: userData.email,
+        born_date: userData.born_date
+      };
+
+      const result = await this.userRepository.create(newUser);
+      return {
+        ok: true,
+        user: {
+          idUsuario: result.id,
+          username: userData.username,
+          email: userData.email
+        }
+      };
     } catch (error) {
+      console.error(`AuthService register error: ${error.message}`);
       return { ok: false, msg: 'registration-failed' };
     }
   }

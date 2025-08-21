@@ -10,7 +10,7 @@ class SubscriptionController {
   }
 
   async create(req, res) {
-    const userId = req.user.idUsuario;
+    const userId = req.user ? req.user.idUsuario : null;
     if (!userId) {
       console.error('Subscription create failed: User not authenticated');
       return res.status(401).json({ ok: false, msg: 'not-authenticated' });
@@ -45,12 +45,12 @@ class SubscriptionController {
   }
 
   async updateState(req, res) {
-    const userId = req.user.idUsuario;
-    if (!userId) return res.status(401).json({ ok: false, msg: 'not-authenticated' });
+    const userId = req.user ? req.user.idUsuario : null;
+    if (!userId) {return res.status(401).json({ ok: false, msg: 'not-authenticated' });}
 
     const { idSuscripcion } = req.query;
     const { state } = req.body;
-    if (!idSuscripcion || !state) return res.json({ ok: false, msg: 'missing-fields' });
+    if (!idSuscripcion || !state) {return res.json({ ok: false, msg: 'missing-fields' });}
 
     if (!['activa', 'inactiva'].includes(state)) {
       return res.json({ ok: false, msg: 'invalid-state' });
@@ -61,16 +61,16 @@ class SubscriptionController {
   }
 
   async getUserSubs(req, res) {
-    const userId = req.user.idUsuario;
-    if (!userId) return res.status(401).json({ ok: false, msg: 'not-authenticated' });
+    const userId = req.user ? req.user.idUsuario : null;
+    if (!userId) {return res.status(401).json({ ok: false, msg: 'not-authenticated' });}
 
     const subscriptions = await this.subscriptionService.getUserSubs(userId);
     res.json({ ok: true, data: subscriptions });
   }
 
   async getAll(req, res) {
-    const userId = req.user.idUsuario;
-    if (!userId) return res.status(401).json({ ok: false, msg: 'not-authenticated' });
+    const userId = req.user ? req.user.idUsuario : null;
+    if (!userId) {return res.status(401).json({ ok: false, msg: 'not-authenticated' });}
     const subscriptions = await this.subscriptionService.getAll();
     res.json({ ok: true, data: subscriptions });
   }

@@ -7,9 +7,9 @@
     "start": "node server.js",
     "start:ci": "node server.js",
     "build": "echo 'no build step'",
-    "lint": "eslint . || echo 'no lint'",
-    "test": "npm run lint && echo 'Tests OK'",
+    "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "jest --coverage --ci",
     "test:performance": "node scripts/run-performance-tests.js",
     "test:performance:win": "scripts\\performance.bat",
     "test:performance:auth": "k6 run tests/k6/auth.test.js --out json=reports/auth-results.json",
@@ -59,6 +59,7 @@
       }
     },
     "testEnvironment": "node",
-    "testMatch": ["**/tests/unit/**/*.test.js"]
+    "testMatch": ["**/tests/unit/**/*.test.js"],
+    "testPathIgnorePatterns": ["/node_modules/", "/tests/k6/"]
   }
 }

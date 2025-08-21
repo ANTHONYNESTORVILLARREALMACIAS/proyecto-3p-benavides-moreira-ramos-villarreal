@@ -19,7 +19,7 @@ class AuthController {
     }
 
     const result = await this.userService.register({ username, password, email, born_date: bornDate });
-    if (!result.ok) return res.json(result);
+    if (!result.ok) {return res.json(result);}
 
     const token = jwt.sign(
       { idUsuario: result.user.idUsuario, username },

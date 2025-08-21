@@ -8,7 +8,7 @@ class UserVariantController {
   }
 
   async create(req, res) {
-    const userId = req.user.idUsuario;
+    const userId = req.user ? req.user.idUsuario : null;
     if (!userId) {
       console.error('UserVariant create failed: User not authenticated');
       return res.status(401).json({ ok: false, msg: 'not-authenticated' });
@@ -36,7 +36,7 @@ class UserVariantController {
   }
 
   async updateRole(req, res) {
-    const userId = req.user.idUsuario;
+    const userId = req.user ? req.user.idUsuario : null;
     if (!userId) {
       console.error('UserVariant updateRole failed: User not authenticated');
       return res.status(401).json({ ok: false, msg: 'not-authenticated' });
