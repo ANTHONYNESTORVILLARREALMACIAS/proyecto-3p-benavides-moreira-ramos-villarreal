@@ -1,13 +1,18 @@
-name: CI & CD (front + back)
+name: CI & CD (Frontend + Backend)
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
     paths:
-      - 'proyecto-frontend/**'
+      - 'proyecto-frontend/**' # Asegúrate de que coincida con la estructura real
       - 'proyecto-backend/**'
-      - '../../proyecto_backend/tests/k6/**/*'
-      - '../workflows/**'
+      - 'proyecto-backend/tests/k6/**' # Corregido el path relativo
+      - '.github/workflows/**' # Corregido el path relativo
+
+# Definir permisos explícitos
+permissions:
+  contents: read # Necesario para actions/checkout
+  actions: write # Necesario para upload-artifact
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,57 +25,98 @@ jobs:
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     defaults:
       run:
-        working-directory: front
+        working-directory: proyecto-frontend # Cambiado a proyecto-frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './proyecto-frontend/package-lock.json'
+          cache-dependency-path: proyecto-frontend/package-lock.json
       - run: npm ci
-      - run: npm run lint --if-present
-      - run: npm test --if-present
+      - run: npm run lint # Eliminado --if-present
+      - run: npm test
       - run: npm run build
       - name: Guardar artefacto de build
         uses: actions/upload-artifact@v4
         with:
           name: front-dist
-          path: front/dist
+          path: proyecto-frontend/dist # Actualizado el path
+          retention-days: 7 # Opcional: especificar retención
 
   ci_back:
     name: CI Back (Node)
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }} # Añadido para consistencia
     defaults:
       run:
-        working-directory: back
+        working-directory: proyecto-backend # Cambiado a proyecto-backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: './proyecto_backend/package-lock.json'
+          cache-dependency-path: proyecto-backend/package-lock.json
       - run: npm ci
-      - run: npm run lint --if-present
-      - run: npm test --if-present
-      - run: npm run build --if-present
+      - run: npm run lint # Eliminado --if-present
+      - run: npm test
+      - run: npm run build # Eliminado --if-present
+      - name: Guardar artefacto de build
+        uses: actions/upload-artifact@v4
+        if: success() # Solo subir si el build es exitoso
+        with:
+          name: back-dist
+          path: proyecto-backend/dist # Ajusta según la salida real
+          retention-days: 7
 
   k6:
-    name: k6 Smoke/Load
+    name: k6 Smoke/Load Tests
     needs: [ci_back]
     runs-on: ubuntu-latest
+    if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }} # Añadido para consistencia
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Instalar deps del back
-        working-directory: back
+          node-version: '20'
+      - name: Instalar dependencias del backend
+        working-directory: proyecto-backend
         run: npm ci
       - name: Levantar API en background
-        working-directory: back
+        working-directory: proyecto-backend
         run: |
           npm run start:ci &
-          npx wait-on http://localhost:3000/health
+          npx wait-on --timeout 30000 http://localhost:3000/health || { echo "API failed to start"; exit 1; }
+      - name: Instalar k6
+        run: |
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747825693
+          echo "deb https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+      - name: Ejecutar pruebas de k6
+        working-directory: proyecto-backend/tests/k6
+        run: k6 run smoke-test.js # Ajusta al script de k6 que desees ejecutar
+      - name: Resumen
+        run: |
           echo "Prod URL: https://${{ vars.FIREBASE_SITE_PROD }}.web.app" >> $GITHUB_STEP_SUMMARY
+        if: success()
+
+  deploy_front:
+    name: Deploy Frontend (Firebase)
+    needs: [ci_front]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, '[skip ci]') # Solo en main
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: front-dist
+          path: proyecto-frontend/dist
+      - name: Desplegar a Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          channelId: live
+          projectId: ${{ vars.FIREBASE_PROJECT_ID }}
